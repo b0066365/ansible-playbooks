@@ -1,0 +1,47 @@
+- name: playbook for testing bridge_domains
+  hosts: stulab-apic
+  connection: local
+  gather_facts: no
+
+
+  vars:
+    apic_username: "admin"
+    apic_password: "password"
+    vcenter_ip: "10.1.17.50"
+    vcenter_username: "administrator@vsphere.local"
+    vcenter_password: "C15co123!"
+    vcenter_dc: "STULAB-ACI"
+
+
+    vms:
+      - { vmname: "RIT-VM-01", vmfolder: "RIT_ITD", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "quarantine" }
+      - { vmname: "RIT-VM-02", vmfolder: "RIT_ITD", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "quarantine" }
+      - { vmname: "RIT-VM-03", vmfolder: "RIT_ITD", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "quarantine" }
+      - { vmname: "RIT-VM-04", vmfolder: "RIT_ITD", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "quarantine" }
+      #- { vmname: "RIT-FW-01", vmfolder: "RIT_ITD", vmstate: "poweredon", template: "ASAv-992_Template", network: "VL-11" }
+      #- { vmname: "RIT-FW-02", vmfolder: "RIT_ITD", vmstate: "poweredon", template: "ASAv-992_Template", network: "VL-11" }
+
+  #DCTD-Demo|VDS-MicroSegmentation|VDS-MicroSeg_Server_EPG
+
+
+  tasks:
+
+    - name: Clone a VM from Template and customize
+      vmware_guest:
+        hostname: "{{ vcenter_ip }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        datacenter: "{{ vcenter_dc }}"
+        state: "{{ item.vmstate }}"
+        #state: poweredoff
+        #state: absent
+        name: "{{ item.vmname }}"
+        #guest_id: other3xLinux64Guest
+        template: "{{ item.template }}"
+        folder: "/{{ item.vmfolder }}"
+        networks:
+          - name: "{{ item.network }}"
+            type: dhcp
+      with_items: "{{ vms }}"
+      delegate_to: localhost

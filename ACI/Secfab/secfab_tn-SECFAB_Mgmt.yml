@@ -1,0 +1,157 @@
+# Version 0.2
+# Date: 2018/09/17
+# Created by: dwoellha (Cisco)
+#
+#
+
+
+- name: playbook for testing bridge_domains
+  hosts: SecAPIC
+  connection: local
+  gather_facts: no
+
+
+  vars:
+    apic_username: "ansible"
+    apic_password: "password"
+
+
+    tenants:
+      - { name: "SECFAB_Mgmt", state: "present" }
+
+    vrfs:
+      - { name: "PROD_VRF", tenant: "SECFAB_Mgmt", state: "present" }
+
+    bds:
+      - { name: "VL-17_BD", vrf: "PROD_VRF", tenant: "SECFAB_Mgmt", gateway: "10.1.17.250", mask: "24", state: "present" }
+      - { name: "VL-18_BD", vrf: "PROD_VRF", tenant: "SECFAB_Mgmt", gateway: "10.1.18.250", mask: "24", state: "present" }
+
+    anps:
+      - { name: "Mgmt_ANP", tenant: "SECFAB_Mgmt" }
+
+    epgs:
+      - { name: "VL-17_EPG", tenant: "SECFAB_Mgmt", anp: "Mgmt_ANP", bd: "VL-17_BD", pd: "SECFAB_Mgmt_PD", con: "", conType: "" }
+      - { name: "VL-18_EPG", tenant: "SECFAB_Mgmt", anp: "Mgmt_ANP", bd: "VL-18_BD", pd: "SECFAB_Mgmt_PD", con: "", conType: "" }
+
+    static_ports:
+      - { name: "VL-17_EPG", tenant: "SECFAB_Mgmt", anp: "Mgmt_ANP", encap: "17" , pod: "1", leafs: "1001-1002", intMode: "tagged", intType: "vpc", interface: "SECFAB_VPC_MGMT_LAP"}
+      - { name: "VL-18_EPG", tenant: "SECFAB_Mgmt", anp: "Mgmt_ANP", encap: "18" , pod: "1", leafs: "1001-1002", intMode: "tagged", intType: "vpc", interface: "SECFAB_VPC_MGMT_LAP"}
+      - { name: "VL-18_EPG", tenant: "SECFAB_Mgmt", anp: "Mgmt_ANP", encap: "18" , pod: "1", leafs: "2001", intMode: "native", intType: "switch_port", interface: "1/6"}
+
+
+
+
+  tasks:
+
+    - name: Create Tenants
+      aci_tenant:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: "{{ item.name }}"
+        state: "{{ item.state }}"
+      with_items: "{{ tenants }}"
+
+    - pause:
+        seconds: 1
+
+    - name: Create VRFs per Tenant
+      aci_vrf:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        vrf: "{{ item.name }}"
+        tenant: "{{ item.tenant }}"
+        policy_control_preference: enforced
+        state: "{{ item.state }}"
+      with_items: "{{ vrfs }}"
+
+    - pause:
+        seconds: 1
+
+    - name: Add BDs
+      aci_bd:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        state: "{{ item.state }}"
+        tenant: "{{ item.tenant }}"
+        bd: "{{ item.name }}"
+        vrf: "{{ item.vrf }}"
+      with_items: "{{ bds }}"
+
+    - name: Add BD Subnet
+      aci_bd_subnet:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: "{{ item.tenant }}"
+        bd: "{{ item.name }}"
+        gateway: "{{ item.gateway }}"
+        mask: "{{ item.mask }}"
+      when: item.gateway !=""
+      with_items: "{{ bds }}"
+
+    - name: Add APs
+      aci_ap:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: "{{ item.tenant }}"
+        ap: "{{ item.name }}"
+        state: present
+      with_items: "{{ anps }}"
+
+    - name: Add EPGs
+      aci_epg:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: "{{ item.tenant }}"
+        ap: "{{ item.anp }}"
+        epg: "{{ item.name }}"
+        bd: "{{ item.bd }}"
+        state: present
+      with_items: "{{ epgs }}"
+
+    - name: Add a new physical domain to EPG binding
+      aci_epg_to_domain:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: "{{ item.tenant }}"
+        ap: "{{ item.anp }}"
+        epg: "{{ item.name }}"
+        domain: "{{ item.pd }}"
+        domain_type: phys
+        state: present
+      delegate_to: localhost
+      when: item.pd !=""
+      with_items: "{{ epgs }}"
+
+    - name: Deploy Static Path binding for given EPG
+      aci_static_binding_to_epg:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: "{{ item.tenant }}"
+        ap: "{{ item.anp }}"
+        epg: "{{ item.name }}"
+        encap_id: "{{ item.encap }}"
+        deploy_immediacy: lazy
+        interface_mode: "{{ item.intMode }}"
+        interface_type: "{{ item.intType }}"
+        pod_id: "{{ item.pod }}"
+        leafs: "{{ item.leafs }}"
+        interface: "{{ item.interface }}"
+        state: present
+      delegate_to: localhost
+      with_items: "{{ static_ports }}"

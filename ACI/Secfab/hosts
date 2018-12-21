@@ -1,0 +1,13 @@
+[ScriptHosts]
+10.1.17.26
+
+[UCSDomains]
+10.1.6.20
+10.1.17.10
+
+[SecAPIC]
+10.1.17.29
+
+[FTD]
+ftd-01 ansible_network_os=ftd ansible_user=admin ansible_password=C15co123! ansible_httpapi_port=443 ansible_httpapi_use_ssl=True ansible_httpapi_validate_certs=False
+

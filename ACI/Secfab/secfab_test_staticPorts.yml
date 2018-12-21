@@ -1,0 +1,117 @@
+- name: playbook for testing bridge_domains
+  hosts: SecAPIC
+  connection: local
+  gather_facts: no
+  
+
+  vars:
+    apic_username: "ansible"
+    apic_password: "password!"
+    ntp_server: "10.1.17.1"
+    ntp_timezone: "Europe-Berlin"
+    bgp_as: "1"
+    bgp_rrs:
+      - { NodeID: "101", PodID: "1"}
+
+    vlan_pools:
+      - { name: "SECFAB_InBand_VLP", allocation: "static"}
+      - { name: "SECFAB_MultiPOD_VLP", allocation: "static"}
+      - { name: "SECFAB_PhyServer_VLP", allocation: "static"}
+      - { name: "SECFAB_VMM_VLP", allocation: "dynamic"}
+
+    vlan_blocks:
+      - { vlan_pool: "SECFAB_InBand_VLP", vlan_from: "92", vlan_to: "92", allocation: "static"  }
+      - { vlan_pool: "SECFAB_MultiPOD_VLP", vlan_from: "4", vlan_to: "4", allocation: "static"  }
+      - { vlan_pool: "SECFAB_PhyServer_VLP", vlan_from: "2", vlan_to: "999", allocation: "static"  }
+      - { vlan_pool: "SECFAB_VMM_VLP", vlan_from: "3001", vlan_to: "3900", allocation: "dynamic"  }
+
+    phys_doms:
+      - { name: "SECFAB_PhyServer_PD", vlan_pool: "SECFAB_PhyServer_VLP", vlan_pool_type: "static"}
+
+    ext_routed_doms:
+      - { name: "SECFAB_MultiPOD_L3DOM", vlan_pool: "SECFAB_MultiPOD_VLP", vlan_pool_type: "static"}
+      - { name: "SECFAB_SE-R4_N9372TX-02_L3DOM", vlan_pool: "SECFAB_SE-R4_N9372TX-02_VLP", vlan_pool_type: "static"}
+
+    link_levels:
+      - { name: "SECFAB_100M", speed: "100M", auto_neg: "off"}
+      - { name: "SECFAB_1G", speed: "1G", auto_neg: "off"}
+      - { name: "SECFAB_10G", speed: "10G", auto_neg: "off"}
+      - { name: "SECFAB_40G", speed: "40G", auto_neg: "off"}
+      - { name: "SECFAB_Auto", speed: "inherit", auto_neg: "on"}
+
+    cdps:
+      - { name: "SECFAB_CDP-ENABLED", AdminState: "enabled"}
+      - { name: "SECFAB_CDP-DISABLED", AdminState: "disabled"}
+
+    lldps:
+      - { name: "SECFAB_LLDP-ENABLED", RxState: "enabled", TxState: "enabled"}
+      - { name: "SECFAB_LLDP-DISABLED", RxState: "disabled", TxState: "disabled"}
+
+    port_channels:
+      - { name: "SECFAB_LACP-ACTIVE", mode: "active"}
+      - { name: "SECFAB_PC-ON", mode: "off"}
+
+    aeps:
+      - { name: "SECFAB_General_AEP", state: "present" }
+      - { name: "SECFAB_InBand_AAEP", state: "present" }
+      - { name: "SECFAB_MultiPOD_AAEP", state: "present" }
+
+    ipgs_access:
+      - { name: "SECFAB_ESX-Host_LAP", llp: "SECFAB_10G", cdp: "SECFAB_CDP-ENABLED", lldp: "SECFAB_LLDP-ENABLED", aep: "SECFAB_General_AEP" }
+      - { name: "SECFAB_ESX-Host_LAP-Test", llp: "SECFAB_10G", cdp: "SECFAB_CDP-ENABLED", lldp: "SECFAB_LLDP-ENABLED", aep: "SECFAB_General_AEP" }
+
+    ipgs_vpc:
+      - { name: "SECFAB_VPC_ESX-Host_LAP", llp: "SECFAB_10G", cdp: "SECFAB_CDP-ENABLED", lldp: "SECFAB_LLDP-ENABLED", aep: "SECFAB_General_AEP", portchannel: "SECFAB_LACP-ACTIVE" }
+      - { name: "SECFAB_VPC_ESX-Host_LAP-Test", llp: "SECFAB_10G", cdp: "SECFAB_CDP-ENABLED", lldp: "SECFAB_LLDP-ENABLED", aep: "SECFAB_General_AEP", portchannel: "SECFAB_LACP-ACTIVE" }
+
+    isels:
+      - { name: "Test-1", node: "1001-1002", module: "1", port: "15", ipg: "SECFAB_VPC_ESX-Host_LAP" }
+      - { name: "Test-2", node: "1001-1002", module: "1", port: "17", ipg: "SECFAB_VPC_ESX-Host_LAP-Test" }
+      - { name: "Test-3", node: "1002", module: "1", port: "18", ipg: "SECFAB_ESX-Host_LAP-Test" }
+
+    tenants:
+      - { name: "SECFAB_Mgmt", state: "present" }
+      - { name: "SECFAB_Services-Demo", state: "present" }
+
+
+
+    epg_staticports:
+      - { epg: "App_EPG", domain: "test", tenant: "SECFAB_Services-Demo", anp: "Demo3_APP", type: "vpc", mode: "trunk", encap: "222", pod: "1", leaf: "1001,1002", port: "1/7" }
+      - { epg: "App_EPG", domain: "test", tenant: "SECFAB_Services-Demo", anp: "Demo3_APP", type: "vpc", mode: "trunk", encap: "222", pod: "1", leaf: "1001,1002", port: "1/8" }
+      - { epg: "App_EPG", domain: "test", tenant: "SECFAB_Services-Demo", anp: "Demo3_APP", type: "switch_port", mode: "native", encap: "222", pod: "1", leaf: "1001", port: "1/9" }
+      - { epg: "App_EPG", domain: "test", tenant: "SECFAB_Services-Demo", anp: "Demo3_APP", type: "switch_port", mode: "native", encap: "222", pod: "1", leaf: "1002", port: "1/10" }
+
+  tasks:
+
+    - name: Add a new physical domain to EPG binding
+      aci_epg_to_domain:
+       hostname: "{{ inventory_hostname }}"
+       username: "{{ apic_username }}"
+       password: "{{ apic_password }}"
+       validate_certs: no
+       tenant: "{{ item.tenant }}"
+       ap: "{{ item.anp }}"
+       epg: "{{ item.epg }}"
+       domain: "{{ item.domain }}"
+       domain_type: phys
+       state: present
+      with_items: "{{ epg_staticports }}"
+
+
+    - name: Deploy Static Path binding for given EPG
+      aci_static_binding_to_epg:
+       hostname: "{{ inventory_hostname }}"
+       username: "{{ apic_username }}"
+       password: "{{ apic_password }}"
+       validate_certs: no
+       tenant: "{{ item.tenant }}"
+       ap: "{{ item.anp }}"
+       epg: "{{ item.epg }}"
+       encap_id: "{{ item.encap }}"
+       interface_mode: "{{ item.mode }}"
+       interface_type: "{{ item.type }}"
+       pod_id: "{{ item.pod }}"
+       leafs: "{{ item.leaf }}"
+       interface: "{{ item.port }}"
+       state: present
+      with_items: "{{ epg_staticports }}"

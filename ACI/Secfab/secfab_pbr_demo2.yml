@@ -1,0 +1,207 @@
+- name: playbook for testing bridge_domains
+  hosts: SecAPIC
+  connection: local
+  gather_facts: no
+  
+  
+  vars:
+    apic_username: "ansible"
+    apic_password: "C15co123!"
+    vcenter_ip: "10.1.17.50"
+    vcenter_username: "administrator@vsphere.local"
+    vcenter_password: "C15co123!"
+    vcenter_dc: "STULAB-Infra"
+    
+    vrfs:    
+      - { name: "Demo1_VRF" }
+      - { name: "Demo2_VRF" }
+      - { name: "Demo3_VRF" }
+    
+    bds:
+      - { name: "Demo1_Web_BD", vrf: "Demo1_VRF", gateway: "172.16.1.1", mask: "24" }
+      - { name: "Demo1_App_BD", vrf: "Demo1_VRF", gateway: "172.16.2.1", mask: "24" }
+      - { name: "Demo1_SG_BD", vrf: "Demo1_VRF", gateway: "172.16.200.1", mask: "24" }
+      - { name: "Demo2_Srv_BD", vrf: "Demo2_VRF", gateway: "172.16.1.1", mask: "24" }
+      - { name: "Demo2_SG_BD", vrf: "Demo2_VRF", gateway: "172.16.200.1", mask: "24" }
+      - { name: "Demo3_Web_BD", vrf: "Demo3_VRF", gateway: "", mask: "" }
+      - { name: "Demo3_App_BD", vrf: "Demo3_VRF", gateway: "", mask: "" }
+      
+    anps:
+      - { name: "Demo1_APP" }
+      - { name: "Demo2_APP" }
+      - { name: "Demo3_APP" }
+      
+    epgs:
+      - { name: "App_EPG", anp: "Demo1_APP", bd: "Demo1_App_BD", con: "", conType: "" }
+      - { name: "Web_EPG", anp: "Demo1_APP", bd: "Demo1_App_BD", con: "", conType: "" }
+      - { name: "Web2_EPG", anp: "Demo1_APP", bd: "Demo1_App_BD", con: "", conType: "" }
+      - { name: "App_EPG", anp: "Demo2_APP", bd: "Demo2_Srv_BD", con: "", conType: "" }
+      - { name: "Web_EPG", anp: "Demo2_APP", bd: "Demo2_Srv_BD", con: "", conType: "" }
+      - { name: "App_EPG", anp: "Demo3_APP", bd: "Demo3_App_BD", con: "", conType: "" }
+      - { name: "Web_EPG", anp: "Demo3_APP", bd: "Demo3_Web_BD", con: "", conType: "" }
+      
+    vms:
+      - { vmname: "Web-Srv-11", vmfolder: "Sec-Lab/ACI_PBR_Demo1", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "quarantine" }
+      - { vmname: "Web-Srv-12", vmfolder: "Sec-Lab/ACI_PBR_Demo1", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "quarantine" }
+      - { vmname: "App-Srv-11", vmfolder: "Sec-Lab/ACI_PBR_Demo1", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "quarantine" }
+      - { vmname: "Web-Srv-21", vmfolder: "Sec-Lab/ACI_PBR_Demo2", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "quarantine" }
+      - { vmname: "App-Srv-21", vmfolder: "Sec-Lab/ACI_PBR_Demo2", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "quarantine" }
+      - { vmname: "Web-Srv-31", vmfolder: "Sec-Lab/ACI_PBR_Demo3", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "quarantine" }
+      - { vmname: "App-Srv-31", vmfolder: "Sec-Lab/ACI_PBR_Demo3", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "quarantine" }
+      
+    firewalls:
+      - { vmname: "SECFAB_FTD-01", vmfolder: "Sec-Lab/ACI_PBR_Demo1", vmstate: "poweredon", template: "FTDv-623_Template_v1"}      
+      - { vmname: "SECFAB_FTD-02", vmfolder: "Sec-Lab/ACI_PBR_Demo2", vmstate: "poweredon", template: "FTDv-623_Template_v1"}    
+      - { vmname: "SECFAB_FTD-03", vmfolder: "Sec-Lab/ACI_PBR_Demo3", vmstate: "poweredon", template: "FTDv-623_Template_v1"}
+    
+  
+  #DCTD-Demo|VDS-MicroSegmentation|VDS-MicroSeg_Server_EPG
+  
+  
+  tasks:      
+       
+    - name: Create Tenant
+      aci_tenant:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: SECFAB_Services-Demo
+        state: present
+    
+    - pause:
+        seconds: 1
+      
+    - name: Create VRFs
+      aci_vrf:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        vrf: "{{ item.name }}"
+        tenant: common
+        policy_control_preference: enforced
+        state: present
+      with_items: "{{ vrfs }}"
+    
+    - pause:
+        seconds: 1
+      
+    - name: Add L3 BDs
+      aci_bd:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        state: present
+        tenant: common
+        bd: "{{ item.name }}"
+        vrf: "{{ item.vrf }}"
+      when: item.gateway !="" 
+      with_items: "{{ bds }}"
+      
+    - name: Add L2 BDs
+      aci_bd:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        state: present
+        tenant: common
+        arp_flooding: yes
+        l2_unknown_unicast: flood
+        l3_unknown_multicast: flood
+        bd: "{{ item.name }}"
+        vrf: "{{ item.vrf }}"
+      when: item.gateway =="" 
+      with_items: "{{ bds }}"
+      
+    - name: Add BD Subnet
+      aci_bd_subnet:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: common
+        bd: "{{ item.name }}"
+        gateway: "{{ item.gateway }}"
+        mask: "{{ item.mask }}"
+      when: item.gateway !="" 
+      with_items: "{{ bds }}"
+    
+    - name: Add APs
+      aci_ap:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: SECFAB_Services-Demo
+        ap: "{{ item.name }}"
+        state: present
+      with_items: "{{ anps }}"
+      
+    - name: Add EPGs
+      aci_epg:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: SECFAB_Services-Demo
+        ap: "{{ item.anp }}"
+        epg: "{{ item.name }}"
+        bd: "{{ item.bd }}"
+        state: present
+      with_items: "{{ epgs }}"
+      
+    - name: Add a new VMM domain to EPG binding
+      aci_epg_to_domain:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: SECFAB_Services-Demo
+        ap: "{{ item.anp }}"
+        epg: "{{ item.name }}"
+        domain: SECFAB-ACI
+        domain_type: vmm
+        vm_provider: vmware
+        state: present
+      with_items: "{{ epgs }}"
+        
+    
+      
+    - name: Clone a VM from Template and customize
+      vmware_guest:
+        hostname: "{{ vcenter_ip }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        datacenter: "{{ vcenter_dc }}"
+        state: "{{ item.vmstate }}"
+        #state: poweredoff
+        #state: absent
+        name: "{{ item.vmname }}"
+        #guest_id: other3xLinux64Guest
+        template: "{{ item.template }}"
+        folder: "/{{ item.vmfolder }}"
+        networks:
+          - name: "{{ item.network }}"
+            type: dhcp
+      with_items: "{{ vms }}"
+      delegate_to: localhost  
+      
+    - name: Clone a Firewalls from Template and customize
+      vmware_guest:
+        hostname: "{{ vcenter_ip }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        datacenter: "{{ vcenter_dc }}"
+        state: "{{ item.vmstate }}"
+        name: "{{ item.vmname }}"
+        folder: "/{{ item.vmfolder }}"        
+        template: "{{ item.template }}"
+      with_items: "{{ firewalls }}"
+      delegate_to: localhost
+      
+ 

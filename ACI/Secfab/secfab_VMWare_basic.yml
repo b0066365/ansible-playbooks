@@ -1,0 +1,37 @@
+- name: playbook for VMWare Basics
+  hosts: SecAPIC
+  connection: local
+  gather_facts: no
+
+
+  vars:
+    vcenter_hostname: "10.1.17.50"
+    vcenter_username: "administrator@vsphere.local"
+    vcenter_password: "password"
+
+    esxis:
+        - { name: "se-r5-c240m4-03.topgun.cisco.com" }
+        - { name: "se-r5-c240m4-04.topgun.cisco.com" }
+        - { name: "se-r5-c240m4-05.topgun.cisco.com" }
+
+  tasks:
+
+  - name: Manage Log level setting for an ESXi Host
+    vmware_host_config_manager:
+      hostname: '{{ vcenter_hostname }}'
+      username: '{{ vcenter_username }}'
+      password: '{{ vcenter_password }}'
+      validate_certs: no
+      esxi_hostname: '{{ item.name }}'
+      options:
+          'NFS.MaxVolumes': '256'
+          'NFS.HeartbeatFrequency': '20'
+          'NFS.HeartbeatDelta': '12'
+          'NFS.HeartbeatMaxFailures': '10'
+          'NFS.HeartbeatTimeout': '5'
+          'NFS.SendBufferSize': '264'
+          'NFS.ReceiveBufferSize': '256'
+          'Net.TcpipHeapMax': '128'
+          'Net.TcpipHeapSize': '32'
+    delegate_to: localhost
+    with_items: "{{esxis}}"

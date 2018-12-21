@@ -1,0 +1,410 @@
+# Version 0.2
+# Date: 2018/09/17
+# Created by: dwoellha (Cisco)
+#
+#
+
+
+- name: playbook for testing bridge_domains
+  hosts: SecAPIC
+  connection: local
+  gather_facts: no
+
+
+  vars:
+    apic_username: "ansible"
+    apic_password: "password"
+
+
+    tenants:
+      - { name: "IOS_IZ", state: "present" }
+      - { name: "IOS_EZ", state: "present" }
+      - { name: "IOS_CA", state: "present" }
+      - { name: "IOS_URS-Bestand", state: "present" }
+      - { name: "IOS_KIVBF-Bestand", state: "present" }
+      - { name: "IOS_Security", state: "present" }
+      - { name: "IOS_Storage", state: "present" }
+      - { name: "IOS_VMWare", state: "present" }
+      - { name: "IOS_L3-Transfer", state: "present" }
+
+    vrfs:
+      - { name: "IZ_VRF", tenant: "IOS_IZ", state: "present" }
+      - { name: "EZ_VRF", tenant: "IOS_EZ", state: "present" }
+      - { name: "CA_VRF", tenant: "IOS_CA", state: "present" }
+      - { name: "URS-Bestand_VRF", tenant: "IOS_URS-Bestand", state: "present" }
+      - { name: "KIVBF-Bestand_VRF", tenant: "IOS_KIVBF-Bestand", state: "present" }
+      - { name: "Security_VRF", tenant: "IOS_Security", state: "present" }
+      - { name: "Storage_VRF", tenant: "IOS_Storage", state: "present" }
+      - { name: "VMWare_VRF", tenant: "IOS_VMWare", state: "present" }
+      - { name: "L3-Transfer_VRF", tenant: "IOS_L3-Transfer", state: "present" }
+
+    bds:
+      - { name: "IZ-BD1", vrf: "IZ_VRF", tenant: "IOS_IZ", gateway: "10.222.1.1", mask: "24", state: "present" }
+      - { name: "IZ-BD2", vrf: "IZ_VRF", tenant: "IOS_IZ", gateway: "10.222.2.1", mask: "24", state: "present" }
+      - { name: "IZ-BD3", vrf: "IZ_VRF", tenant: "IOS_IZ", gateway: "10.222.3.1", mask: "24", state: "present" }
+      - { name: "IZ-BD-L3-ST", vrf: "IZ_VRF", tenant: "IOS_IZ", gateway: "10.144.255.1", mask: "25", state: "present" }
+      - { name: "IZ-BD-L3-KA", vrf: "IZ_VRF", tenant: "IOS_IZ", gateway: "10.144.255.129", mask: "25", state: "present" }
+      - { name: "IZ-BD-CIFS", vrf: "IZ_VRF", tenant: "IOS_IZ", gateway: "", mask: "", state: "present" }
+      - { name: "IZ-BD-SG-ST", vrf: "IZ_VRF", tenant: "IOS_IZ", gateway: "10.144.254.1", mask: "25", state: "present" }
+      - { name: "IZ-BD-SG-KA", vrf: "IZ_VRF", tenant: "IOS_IZ", gateway: "10.144.254.129", mask: "25", state: "present" }
+      - { name: "EZ-BD11", vrf: "EZ_VRF", tenant: "IOS_EZ", gateway: "10.246.1.1", mask: "24", state: "present" }
+      - { name: "EZ-BD12", vrf: "EZ_VRF", tenant: "IOS_EZ", gateway: "10.246.2.1", mask: "24", state: "present" }
+      - { name: "EZ-BD13", vrf: "EZ_VRF", tenant: "IOS_EZ", gateway: "10.246.3.1", mask: "24", state: "present" }
+      - { name: "EZ-BD-L3-ST", vrf: "EZ_VRF", tenant: "IOS_EZ", gateway: "10.144.253.1", mask: "25", state: "present" }
+      - { name: "EZ-BD-L3-KA", vrf: "EZ_VRF", tenant: "IOS_EZ", gateway: "10.144.253.129", mask: "25", state: "present" }
+#      - { name: "EZ-BD-CIFS", vrf: "EZ_VRF", tenant: "IOS_EZ", gateway: "", mask: "", state: "present" }
+      - { name: "EZ-BD-SG-ST", vrf: "EZ_VRF", tenant: "IOS_EZ", gateway: "10.144.252.1", mask: "25", state: "present" }
+      - { name: "EZ-BD-SG-KA", vrf: "EZ_VRF", tenant: "IOS_EZ", gateway: "10.144.252.129", mask: "25", state: "present" }
+      - { name: "CA-BD21", vrf: "CA_VRF", tenant: "IOS_CA", gateway: "10.248.1.1", mask: "24", state: "present" }
+      - { name: "CA-BD22", vrf: "CA_VRF", tenant: "IOS_CA", gateway: "10.248.2.1", mask: "24", state: "present" }
+      - { name: "CA-BD23", vrf: "CA_VRF", tenant: "IOS_CA", gateway: "10.248.3.1", mask: "24", state: "present" }
+      - { name: "CA-BD-L3-ST", vrf: "CA_VRF", tenant: "IOS_CA", gateway: "10.144.251.1", mask: "25", state: "present" }
+      - { name: "CA-BD-L3-KA", vrf: "CA_VRF", tenant: "IOS_CA", gateway: "10.144.251.129", mask: "25", state: "present" }
+#      - { name: "CA-BD-CIFS", vrf: "CA_VRF", tenant: "IOS_CA", gateway: "", mask: "", state: "present" }
+      - { name: "CA-BD-SG-ST", vrf: "CA_VRF", tenant: "IOS_CA", gateway: "10.144.250.1", mask: "25", state: "present" }
+      - { name: "CA-BD-SG-KA", vrf: "CA_VRF", tenant: "IOS_CA", gateway: "10.144.250.129", mask: "25", state: "present" }
+      - { name: "URS-BD31", vrf: "URS-Bestand_VRF", tenant: "IOS_URS-Bestand", gateway: "", mask: "", state: "present" }
+      - { name: "URS-BD32", vrf: "URS-Bestand_VRF", tenant: "IOS_URS-Bestand", gateway: "", mask: "", state: "present" }
+      - { name: "URS-BD33", vrf: "URS-Bestand_VRF", tenant: "IOS_URS-Bestand", gateway: "", mask: "", state: "present" }
+      - { name: "KIVBF-BD-41", vrf: "KIVBF-Bestand_VRF", tenant: "IOS_KIVBF-Bestand", gateway: "", mask: "", state: "present" }
+      - { name: "KIVBF-BD-42", vrf: "KIVBF-Bestand_VRF", tenant: "IOS_KIVBF-Bestand", gateway: "", mask: "", state: "present" }
+      - { name: "SEC-BD-51", vrf: "Security_VRF", tenant: "IOS_Security", gateway: "", mask: "", state: "present" }
+      - { name: "SEC-BD-52", vrf: "Security_VRF", tenant: "IOS_Security", gateway: "", mask: "", state: "present" }
+      - { name: "SEC-BD-53", vrf: "Security_VRF", tenant: "IOS_Security", gateway: "", mask: "", state: "present" }
+      - { name: "SEC-BD-54", vrf: "Security_VRF", tenant: "IOS_Security", gateway: "", mask: "", state: "present" }
+      - { name: "SEC-BD-55", vrf: "Security_VRF", tenant: "IOS_Security", gateway: "", mask: "", state: "present" }
+      - { name: "SEC-BD-56", vrf: "Security_VRF", tenant: "IOS_Security", gateway: "", mask: "", state: "present" }
+      - { name: "STO-BD-61", vrf: "Storage_VRF", tenant: "IOS_Storage", gateway: "", mask: "", state: "present" }
+      - { name: "STO-BD-62", vrf: "Storage_VRF", tenant: "IOS_Storage", gateway: "", mask: "", state: "present" }
+      - { name: "STO-BD-63", vrf: "Storage_VRF", tenant: "IOS_Storage", gateway: "", mask: "", state: "present" }
+      - { name: "STO-BD-64", vrf: "Storage_VRF", tenant: "IOS_Storage", gateway: "", mask: "", state: "present" }
+      - { name: "VM-BD-71", vrf: "VMWare_VRF", tenant: "IOS_VMWare", gateway: "", mask: "", state: "present" }
+      - { name: "VM-BD-72", vrf: "VMWare_VRF", tenant: "IOS_VMWare", gateway: "", mask: "", state: "present" }
+      - { name: "VM-BD-73", vrf: "VMWare_VRF", tenant: "IOS_VMWare", gateway: "", mask: "", state: "present" }
+      - { name: "VM-BD-74", vrf: "VMWare_VRF", tenant: "IOS_VMWare", gateway: "", mask: "", state: "present" }
+      - { name: "VM-BD-75", vrf: "VMWare_VRF", tenant: "IOS_VMWare", gateway: "", mask: "", state: "present" }
+      - { name: "VM-BD-76", vrf: "VMWare_VRF", tenant: "IOS_VMWare", gateway: "", mask: "", state: "present" }
+      - { name: "VM-BD-77", vrf: "VMWare_VRF", tenant: "IOS_VMWare", gateway: "", mask: "", state: "present" }
+      - { name: "VM-BD-78", vrf: "VMWare_VRF", tenant: "IOS_VMWare", gateway: "", mask: "", state: "present" }
+      - { name: "VM-BD-79", vrf: "VMWare_VRF", tenant: "IOS_VMWare", gateway: "", mask: "", state: "present" }
+      - { name: "L3-T-BD", vrf: "L3-Transfer_VRF", tenant: "IOS_L3-Transfer", gateway: "", mask: "", state: "present" }
+
+    anps:
+      - { name: "ANP-IZ-BD1", tenant: "IOS_IZ" }
+      - { name: "ANP-IZ-BD2", tenant: "IOS_IZ" }
+      - { name: "ANP-IZ-BD3", tenant: "IOS_IZ" }
+      - { name: "ANP-IZ-BD-L3-ST", tenant: "IOS_IZ" }
+      - { name: "ANP-IZ-BD-L3-KA", tenant: "IOS_IZ" }
+      - { name: "ANP-IZ-BD-CIFS", tenant: "IOS_IZ" }
+      - { name: "ANP-IZ-BD-SG-ST", tenant: "IOS_IZ" }
+      - { name: "ANP-IZ-BD-SG-KA", tenant: "IOS_IZ" }
+      - { name: "ANP-EZ-BD11", tenant: "IOS_EZ" }
+      - { name: "ANP-EZ-BD12", tenant: "IOS_EZ" }
+      - { name: "ANP-EZ-BD13", tenant: "IOS_EZ" }
+      - { name: "ANP-EZ-BD-L3-ST", tenant: "IOS_EZ" }
+      - { name: "ANP-EZ-BD-L3-KA", tenant: "IOS_EZ" }
+      - { name: "ANP-EZ-BD-SG-ST", tenant: "IOS_EZ" }
+      - { name: "ANP-EZ-BD-SG-KA", tenant: "IOS_EZ" }
+      - { name: "ANP-CA-BD21", tenant: "IOS_CA" }
+      - { name: "ANP-CA-BD22", tenant: "IOS_CA" }
+      - { name: "ANP-CA-BD23", tenant: "IOS_CA" }
+      - { name: "ANP-CA-BD-L3-ST", tenant: "IOS_CA" }
+      - { name: "ANP-CA-BD-L3-KA", tenant: "IOS_CA" }
+      - { name: "ANP-CA-BD-SG-ST", tenant: "IOS_CA" }
+      - { name: "ANP-CA-BD-SG-KA", tenant: "IOS_CA" }
+      - { name: "ANP-URS-BD31", tenant: "IOS_URS-Bestand" }
+      - { name: "ANP-URS-BD32", tenant: "IOS_URS-Bestand" }
+      - { name: "ANP-URS-BD33", tenant: "IOS_URS-Bestand" }
+      - { name: "ANP-KIVBF-BD-41", tenant: "IOS_KIVBF-Bestand" }
+      - { name: "ANP-KIVBF-BD-42", tenant: "IOS_KIVBF-Bestand" }
+      - { name: "ANP-SEC-BD-51", tenant: "IOS_Security" }
+      - { name: "ANP-SEC-BD-52", tenant: "IOS_Security" }
+      - { name: "ANP-SEC-BD-53", tenant: "IOS_Security" }
+      - { name: "ANP-SEC-BD-54", tenant: "IOS_Security" }
+      - { name: "ANP-SEC-BD-55", tenant: "IOS_Security" }
+      - { name: "ANP-SEC-BD-56", tenant: "IOS_Security" }
+      - { name: "ANP-STO-BD-61", tenant: "IOS_Storage" }
+      - { name: "ANP-STO-BD-62", tenant: "IOS_Storage" }
+      - { name: "ANP-STO-BD-63", tenant: "IOS_Storage" }
+      - { name: "ANP-STO-BD-64", tenant: "IOS_Storage" }
+      - { name: "ANP-VM-BD-71", tenant: "IOS_VMWare" }
+      - { name: "ANP-VM-BD-72", tenant: "IOS_VMWare" }
+      - { name: "ANP-VM-BD-73", tenant: "IOS_VMWare" }
+      - { name: "ANP-VM-BD-74", tenant: "IOS_VMWare" }
+      - { name: "ANP-VM-BD-75", tenant: "IOS_VMWare" }
+      - { name: "ANP-VM-BD-76", tenant: "IOS_VMWare" }
+      - { name: "ANP-VM-BD-77", tenant: "IOS_VMWare" }
+      - { name: "ANP-VM-BD-78", tenant: "IOS_VMWare" }
+      - { name: "ANP-VM-BD-79", tenant: "IOS_VMWare" }
+      - { name: "ANP-L3-T-BD", tenant: "IOS_L3-Transfer" }
+
+    epgs:
+# IZ
+      - { name: "IZ-ST-EPG1", tenant: "IOS_IZ", anp: "ANP-IZ-BD1", bd: "IZ-BD1", con: "", conType: "" }
+      - { name: "IZ-ST-EPG2", tenant: "IOS_IZ", anp: "ANP-IZ-BD2", bd: "IZ-BD2", con: "", conType: "" }
+      - { name: "IZ-KA-EPG1", tenant: "IOS_IZ", anp: "ANP-IZ-BD1", bd: "IZ-BD1", con: "", conType: "" }
+      - { name: "IZ-KA-EPG2", tenant: "IOS_IZ", anp: "ANP-IZ-BD2", bd: "IZ-BD2", con: "C-IZ-ST-uEPG3-to-IZ-KA-EPG2", conType: "provider" }
+      - { name: "IZ-ST-EPG3", tenant: "IOS_IZ", anp: "ANP-IZ-BD3", bd: "IZ-BD3", con: "", conType: "" }
+      - { name: "IZ-KA-EPG3", tenant: "IOS_IZ", anp: "ANP-IZ-BD3", bd: "IZ-BD3", con: "", conType: "" }
+      - { name: "IZ-EPG-L3-ST", tenant: "IOS_IZ", anp: "ANP-IZ-BD-L3-ST", bd: "IZ-BD-L3-ST", con: "", conType: "" }
+      - { name: "IZ-EPG-L3-KA", tenant: "IOS_IZ", anp: "ANP-IZ-BD-L3-KA", bd: "IZ-BD-L3-KA", con: "", conType: "" }
+      - { name: "IZ-EGP-CIFS", tenant: "IOS_IZ", anp: "ANP-IZ-BD-CIFS", bd: "IZ-BD-CIFS", con: "", conType: "" }
+      - { name: "IZ-EPG-SG-ST", tenant: "IOS_IZ", anp: "ANP-IZ-BD-SG-ST", bd: "IZ-BD-SG-ST", con: "", conType: "" }
+      - { name: "IZ-EPG-SG-KA", tenant: "IOS_IZ", anp: "ANP-IZ-BD-SG-KA", bd: "IZ-BD-SG-KA", con: "", conType: "" }
+# EZ
+      - { name: "EZ-ST-EPG11", tenant: "IOS_EZ", anp: "ANP-EZ-BD11", bd: "EZ-BD11", con: "C-EZ-KA-EPG12-to-EZ-ST-EPG1", conType: "provider" }
+      - { name: "EZ-ST-EPG12", tenant: "IOS_EZ", anp: "ANP-EZ-BD12", bd: "EZ-BD12", con: "", conType: "" }
+      - { name: "EZ-KA-EPG11", tenant: "IOS_EZ", anp: "ANP-EZ-BD11", bd: "EZ-BD11", con: "", conType: "" }
+      - { name: "EZ-KA-EPG12", tenant: "IOS_EZ", anp: "ANP-EZ-BD12", bd: "EZ-BD12", con: "C-EZ-KA-EPG12-to-EZ-ST-EPG1", conType: "consumer" }
+      - { name: "EZ-ST-EPG13", tenant: "IOS_EZ", anp: "ANP-EZ-BD13", bd: "EZ-BD13", con: "", conType: "" }
+      - { name: "EZ-KA-EPG13", tenant: "IOS_EZ", anp: "ANP-EZ-BD13", bd: "EZ-BD13", con: "", conType: "" }
+      - { name: "EZ-EPG-L3-ST", tenant: "IOS_EZ", anp: "ANP-EZ-BD-L3-ST", bd: "EZ-BD-L3-ST", con: "", conType: "" }
+      - { name: "EZ-EPG-L3-KA", tenant: "IOS_EZ", anp: "ANP-EZ-BD-L3-KA", bd: "EZ-BD-L3-KA", con: "", conType: "" }
+      - { name: "EZ-EPG-SG-ST", tenant: "IOS_EZ", anp: "ANP-EZ-BD-SG-ST", bd: "EZ-BD-SG-ST", con: "", conType: "" }
+      - { name: "EZ-EPG-SG-KA", tenant: "IOS_EZ", anp: "ANP-EZ-BD-SG-KA", bd: "EZ-BD-SG-KA", con: "", conType: "" }
+# CA
+      - { name: "CA-ST-EPG21", tenant: "IOS_CA", anp: "ANP-CA-BD21", bd: "CA-BD21", con: "C-CA-ST-EPG21-to-CA-KA-EPG22", conType: "consumer" }
+      - { name: "CA-ST-EPG22", tenant: "IOS_CA", anp: "ANP-CA-BD22", bd: "CA-BD22", con: "", conType: "" }
+      - { name: "CA-KA-EPG21", tenant: "IOS_CA", anp: "ANP-CA-BD21", bd: "CA-BD21", con: "", conType: "" }
+      - { name: "CA-KA-EPG22", tenant: "IOS_CA", anp: "ANP-CA-BD22", bd: "CA-BD22", con: "C-CA-ST-EPG21-to-CA-KA-EPG22", conType: "provider" }
+      - { name: "CA-ST-EPG23", tenant: "IOS_CA", anp: "ANP-CA-BD23", bd: "CA-BD23", con: "C-CA-ST-EPG3-to-CA-KA-uEPG3", conType: "consumer" }
+      - { name: "CA-KA-EPG23", tenant: "IOS_CA", anp: "ANP-CA-BD23", bd: "CA-BD23", con: "", conType: "" }
+      - { name: "CA-EPG-L3-ST", tenant: "IOS_CA", anp: "ANP-CA-BD-L3-ST", bd: "CA-BD-L3-ST", con: "", conType: "" }
+      - { name: "CA-EPG-L3-KA", tenant: "IOS_CA", anp: "ANP-CA-BD-L3-KA", bd: "CA-BD-L3-KA", con: "", conType: "" }
+      - { name: "CA-EPG-SG-ST", tenant: "IOS_CA", anp: "ANP-CA-BD-SG-ST", bd: "CA-BD-SG-ST", con: "", conType: "" }
+      - { name: "CA-EPG-SG-KA", tenant: "IOS_CA", anp: "ANP-CA-BD-SG-KA", bd: "CA-BD-SG-KA", con: "", conType: "" }
+# URS
+      - { name: "URS-EPG31", tenant: "IOS_URS-Bestand", anp: "ANP-URS-BD31", bd: "URS-BD31", con: "", conType: "" }
+      - { name: "URS-EPG32-v2140", tenant: "IOS_URS-Bestand", anp: "ANP-URS-BD32", bd: "URS-BD32", con: "", conType: "" }
+      - { name: "URS-EPG33-v2141", tenant: "IOS_URS-Bestand", anp: "ANP-URS-BD33", bd: "URS-BD33", con: "", conType: "" }
+# KIVBF
+      - { name: "KIVBF-EPG41", tenant: "IOS_KIVBF-Bestand", anp: "ANP-KIVBF-BD-41", bd: "KIVBF-BD-41", con: "", conType: "" }
+      - { name: "KIVBF-EPG42", tenant: "IOS_KIVBF-Bestand", anp: "ANP-KIVBF-BD-42", bd: "KIVBF-BD-42", con: "", conType: "" }
+# Security
+      - { name: "SEC-EPG51", tenant: "IOS_Security", anp: "ANP-SEC-BD-51", bd: "SEC-BD-51", con: "", conType: "" }
+      - { name: "SEC-EPG52", tenant: "IOS_Security", anp: "ANP-SEC-BD-52", bd: "SEC-BD-52", con: "", conType: "" }
+      - { name: "SEC-EPG53", tenant: "IOS_Security", anp: "ANP-SEC-BD-53", bd: "SEC-BD-53", con: "", conType: "" }
+      - { name: "SEC-EPG54", tenant: "IOS_Security", anp: "ANP-SEC-BD-54", bd: "SEC-BD-54", con: "", conType: "" }
+      - { name: "SEC-EPG55", tenant: "IOS_Security", anp: "ANP-SEC-BD-55", bd: "SEC-BD-55", con: "", conType: "" }
+      - { name: "SEC-EPG56", tenant: "IOS_Security", anp: "ANP-SEC-BD-56", bd: "SEC-BD-56", con: "", conType: "" }
+# Storage
+      - { name: "STO-EPG-61", tenant: "IOS_Storage", anp: "ANP-STO-BD-61", bd: "STO-BD-61", con: "", conType: "" }
+      - { name: "STO-EPG-62", tenant: "IOS_Storage", anp: "ANP-STO-BD-62", bd: "STO-BD-62", con: "", conType: "" }
+      - { name: "STO-EPG-63", tenant: "IOS_Storage", anp: "ANP-STO-BD-63", bd: "STO-BD-63", con: "", conType: "" }
+      - { name: "STO-EPG-64", tenant: "IOS_Storage", anp: "ANP-STO-BD-64", bd: "STO-BD-64", con: "", conType: "" }
+# VMWare
+      - { name: "VM-EPG-71", tenant: "IOS_VMWare", anp: "ANP-VM-BD-71", bd: "VM-BD-71", con: "", conType: "" }
+      - { name: "VM-EPG-72", tenant: "IOS_VMWare", anp: "ANP-VM-BD-72", bd: "VM-BD-72", con: "", conType: "" }
+      - { name: "VM-EPG-73", tenant: "IOS_VMWare", anp: "ANP-VM-BD-73", bd: "VM-BD-73", con: "", conType: "" }
+      - { name: "VM-EPG-74", tenant: "IOS_VMWare", anp: "ANP-VM-BD-74", bd: "VM-BD-74", con: "", conType: "" }
+      - { name: "VM-EPG-75", tenant: "IOS_VMWare", anp: "ANP-VM-BD-75", bd: "VM-BD-75", con: "", conType: "" }
+      - { name: "VM-EPG-76", tenant: "IOS_VMWare", anp: "ANP-VM-BD-76", bd: "VM-BD-76", con: "", conType: "" }
+      - { name: "VM-EPG-77", tenant: "IOS_VMWare", anp: "ANP-VM-BD-77", bd: "VM-BD-77", con: "", conType: "" }
+      - { name: "VM-EPG-78", tenant: "IOS_VMWare", anp: "ANP-VM-BD-78", bd: "VM-BD-78", con: "", conType: "" }
+      - { name: "VM-EPG-79", tenant: "IOS_VMWare", anp: "ANP-VM-BD-79", bd: "VM-BD-79", con: "", conType: "" }
+# L3-Transfer
+      - { name: "L3-T-EGP-100", tenant: "IOS_L3-Transfer", anp: "ANP-L3-T-BD", bd: "L3-T-BD", con: "", conType: "" }
+
+
+    filters:
+      - { name: "IOS_PING", type: "ip", proto: "icmp", dstPort: "unspecified" }
+      - { name: "IOS_RDP", type: "ip", proto: "tcp", dstPort: "3389" }
+      - { name: "IOS_HTTP", type: "ip", proto: "tcp", dstPort: "80" }
+      - { name: "IOS_HTTPS", type: "ip", proto: "tcp", dstPort: "443" }
+      - { name: "IOS_FTP", type: "ip", proto: "tcp", dstPort: "21" }
+      - { name: "IOS_SMB", type: "ip", proto: "tcp", dstPort: "445" }
+      - { name: "IOS_SET-1", type: "ip", proto: "icmp", dstPort: "unspecified" }
+      - { name: "IOS_SET-1", type: "ip", proto: "tcp", dstPort: "3389" }
+      - { name: "IOS_SET-1", type: "ip", proto: "tcp", dstPort: "80" }
+      - { name: "IOS_SET-1", type: "ip", proto: "tcp", dstPort: "443" }
+      - { name: "IOS_SET-1", type: "ip", proto: "tcp", dstPort: "21" }
+
+
+    contracts:
+# Regular Contracts
+      - { name: "C-IZ-ST-uEPG3-to-IZ-KA-uEPG3", filter: "IOS_SET-1", tenant: "IOS_IZ" }
+      - { name: "C-IZ-KA-uEPG3-to-IZ-ST-uEPG3", filter: "IOS_SET-1", tenant: "IOS_IZ" }
+      - { name: "C-IZ-ST-uEPG3-to-IZ-KA-uEPG3", filter: "IOS_SET-1", tenant: "IOS_IZ" }
+      - { name: "C-EZ-ST-uEPG3-to-EZ-KA-uEPG3", filter: "IOS_SET-1", tenant: "IOS_EZ" }
+      - { name: "C-CA-ST-EPG3-to-CA-KA-uEPG3", filter: "IOS_SET-1", tenant: "IOS_CA" }
+      - { name: "C-IZ-ST-uEPG3-to-IZ-KA-EPG2", filter: "IOS_SET-1", tenant: "IOS_IZ" }
+      - { name: "C-EZ-KA-EPG12-to-EZ-ST-EPG1", filter: "IOS_SET-1", tenant: "IOS_EZ" }
+      - { name: "C-CA-ST-EPG21-to-CA-KA-EPG22", filter: "IOS_SET-1", tenant: "IOS_CA" }
+      - { name: "C-Backup-Test", filter: "IOS_SMB", tenant: "IOS_IZ" }
+      - { name: "C-Backup-Test", filter: "IOS_SMB", tenant: "IOS_EZ" }
+      - { name: "C-Backup-Test", filter: "IOS_SMB", tenant: "IOS_CA" }
+      - { name: "C-Backup-Test", filter: "IOS_SMB", tenant: "IOS_URS-Bestand" }
+      - { name: "C-Backup-Test", filter: "IOS_SMB", tenant: "IOS_KIVBF-Bestand" }
+      - { name: "C-Backup-Test", filter: "IOS_SMB", tenant: "IOS_Security" }
+      - { name: "C-Backup-Test", filter: "IOS_SMB", tenant: "IOS_Storage" }
+      - { name: "C-Backup-Test", filter: "IOS_SMB", tenant: "IOS_VMWare" }
+      - { name: "C-Backup-Test", filter: "IOS_SMB", tenant: "IOS_L3-Transfer" }
+# Service Graphs Contracts
+      - { name: "Servicegraph-ST-FW-Intern", filter: "default", tenant: "IOS_IZ" }
+      - { name: "Servicegraph-KA-FW-Intern", filter: "default", tenant: "IOS_IZ" }
+      - { name: "Servicegraph-ST-FW-Extern", filter: "default", tenant: "IOS_EZ" }
+      - { name: "Servicegraph-KA-FW-Extern", filter: "default", tenant: "IOS_EZ" }
+      - { name: "Servicegraph-ST-FW-Campus", filter: "default", tenant: "IOS_CA" }
+      - { name: "Servicegraph-KA-FW-Campus", filter: "default", tenant: "IOS_CA" }
+
+
+
+
+
+  tasks:
+
+    - name: Create Tenants
+      aci_tenant:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: "{{ item.name }}"
+        state: "{{ item.state }}"
+      with_items: "{{ tenants }}"
+
+    - pause:
+        seconds: 1
+
+    - name: Create VRFs per Tenant
+      aci_vrf:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        vrf: "{{ item.name }}"
+        tenant: "{{ item.tenant }}"
+        policy_control_preference: enforced
+        state: "{{ item.state }}"
+      with_items: "{{ vrfs }}"
+
+    - pause:
+        seconds: 1
+
+    - name: Add BDs
+      aci_bd:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        state: "{{ item.state }}"
+        tenant: "{{ item.tenant }}"
+        bd: "{{ item.name }}"
+        vrf: "{{ item.vrf }}"
+      with_items: "{{ bds }}"
+
+    - name: Add BD Subnet
+      aci_bd_subnet:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: "{{ item.tenant }}"
+        bd: "{{ item.name }}"
+        gateway: "{{ item.gateway }}"
+        mask: "{{ item.mask }}"
+      when: item.gateway !=""
+      with_items: "{{ bds }}"
+
+    - name: Add APs
+      aci_ap:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: "{{ item.tenant }}"
+        ap: "{{ item.name }}"
+        state: present
+      with_items: "{{ anps }}"
+
+    - name: Add EPGs
+      aci_epg:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: "{{ item.tenant }}"
+        ap: "{{ item.anp }}"
+        epg: "{{ item.name }}"
+        bd: "{{ item.bd }}"
+        state: present
+      with_items: "{{ epgs }}"
+
+    - name: Add a new filter to a tenant
+      aci_filter:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        filter: "{{ item.name }}"
+        tenant: common
+        state: present
+      with_items: "{{ filters }}"
+
+    - name: Add Filters Entries
+      aci_filter_entry:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        state: present
+        entry: "IOS_{{ item.dstPort }}"
+        ether_type: "{{ item.type }}"
+        ip_protocol: "{{ item.proto }}"
+        dst_port: "{{ item.dstPort }}"
+        tenant: common
+        filter: "{{ item.name }}"
+      with_items: "{{ filters }}"
+
+    - name: Add a new contract
+      aci_contract:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: "{{ item.tenant }}"
+        contract: "{{ item.name }}"
+        state: present
+      with_items: "{{ contracts }}"
+
+    - name: Add a Contract subject
+      aci_contract_subject:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: "{{ item.tenant }}"
+        contract: "{{ item.name }}"
+        subject: All
+        state: present
+      with_items: "{{ contracts }}"
+
+    - name: Add a Contract subject to filter binding
+      aci_contract_subject_to_filter:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: "{{ item.tenant }}"
+        contract: "{{ item.name }}"
+        subject: All
+        filter: "{{ item.filter }}"
+        state: present
+      when: item.filter !=""
+      with_items: "{{ contracts }}"
+
+
+    - name: Add a new contract to EPG binding
+      aci_epg_to_contract:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: "{{ item.tenant }}"
+        ap: "{{ item.anp }}"
+        epg: "{{ item.name }}"
+        contract: "{{ item.con }}"
+        contract_type: "{{ item.conType }}"
+        state: present
+      when: item.con !=""
+      with_items: "{{ epgs }}"

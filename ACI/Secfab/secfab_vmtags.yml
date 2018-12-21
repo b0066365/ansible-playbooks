@@ -1,0 +1,53 @@
+- name: playbook for testing bridge_domains
+  hosts: SecAPIC
+  connection: local
+  gather_facts: no
+
+
+  vars:
+    apic_username: "ansible"
+    apic_password: "password"
+    vcenter_ip: "10.1.17.50"
+    vcenter_username: "administrator@vsphere.local"
+    vcenter_password: "C15co123!"
+    vcenter_dc: "STULAB-Infra"
+
+
+
+    epgs:
+      - { name: "ST-1_EPG", anp: "IZ_ST_APP", bd: "IZ_ST-1_BD", con: "", conType: "" }
+      - { name: "ST-2_EPG", anp: "IZ_ST_APP", bd: "IZ_ST-2_BD", con: "", conType: "" }
+      - { name: "ST-3_EPG", anp: "IZ_ST_APP", bd: "IZ_ST-3_BD", con: "", conType: "" }
+      - { name: "KA-1_EPG", anp: "IZ_KA_APP", bd: "IZ_KA-1_BD", con: "", conType: "" }
+      - { name: "KA-2_EPG", anp: "IZ_KA_APP", bd: "IZ_KA-2_BD", con: "", conType: "" }
+      - { name: "KA-3_EPG", anp: "IZ_KA_APP", bd: "IZ_KA-3_BD", con: "", conType: "" }
+
+
+
+
+  tasks:
+
+    - name: Create a tag
+      vmware_tag:
+        hostname: "{{ vcenter_ip }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: False
+        category_id: 'urn:vmomi:InventoryServiceCategory:e785088d-6981-4b1c-9fb8-1100c3e1f742:GLOBAL'
+        tag_name: Sample_Tag_0002
+        tag_description: Sample Description
+        state: present
+
+#    - name: Clone a Firewalls from Template and customize
+#      vmware_guest:
+#        hostname: "{{ vcenter_ip }}"
+#        username: "{{ vcenter_username }}"
+#        password: "{{ vcenter_password }}"
+#        validate_certs: no
+#        datacenter: "{{ vcenter_dc }}"
+#        state: "{{ item.vmstate }}"
+#        name: "{{ item.vmname }}"
+#        folder: "/{{ item.vmfolder }}"
+#        template: "{{ item.template }}"
+#      with_items: "{{ firewalls }}"
+#      delegate_to: localhost

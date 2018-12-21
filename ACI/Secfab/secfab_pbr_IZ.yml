@@ -1,0 +1,210 @@
+- name: playbook for testing bridge_domains
+  hosts: SecAPIC
+  connection: local
+  gather_facts: no
+
+
+  vars:
+    apic_username: "ansible"
+    apic_password: "password"
+    vcenter_ip: "10.1.17.50"
+    vcenter_username: "administrator@vsphere.local"
+    vcenter_password: "C15co123!"
+    vcenter_dc: "STULAB-Infra"
+
+    tenant: "SECFAB_IZ-Test"
+
+    vrfs:
+      - { name: "IZ_VRF" }
+
+    bds:
+      - { name: "IZ_ST-1_BD", vrf: "IZ_VRF", gateway: "10.222.1.1", mask: "24" }
+      - { name: "IZ_ST-2_BD", vrf: "IZ_VRF", gateway: "10.222.2.1", mask: "24" }
+      - { name: "IZ_ST-3_BD", vrf: "IZ_VRF", gateway: "10.222.3.1", mask: "24" }
+      - { name: "IZ_KA-1_BD", vrf: "IZ_VRF", gateway: "10.222.4.1", mask: "24" }
+      - { name: "IZ_KA-2_BD", vrf: "IZ_VRF", gateway: "10.222.5.1", mask: "24" }
+      - { name: "IZ_KA-3_BD", vrf: "IZ_VRF", gateway: "10.222.6.1", mask: "24" }
+      - { name: "IZ_ST-SG_BD", vrf: "IZ_VRF", gateway: "10.144.251.1", mask: "24" }
+      - { name: "IZ_KA-SG_BD", vrf: "IZ_VRF", gateway: "10.144.252.1", mask: "24" }
+
+    anps:
+      - { name: "IZ_ST_APP" }
+      - { name: "IZ_KA_APP" }
+
+    epgs:
+      - { name: "ST-1_EPG", anp: "IZ_ST_APP", bd: "IZ_ST-1_BD", con: "", conType: "" }
+      - { name: "ST-2_EPG", anp: "IZ_ST_APP", bd: "IZ_ST-2_BD", con: "", conType: "" }
+      - { name: "ST-3_EPG", anp: "IZ_ST_APP", bd: "IZ_ST-3_BD", con: "", conType: "" }
+      - { name: "KA-1_EPG", anp: "IZ_KA_APP", bd: "IZ_KA-1_BD", con: "", conType: "" }
+      - { name: "KA-2_EPG", anp: "IZ_KA_APP", bd: "IZ_KA-2_BD", con: "", conType: "" }
+      - { name: "KA-3_EPG", anp: "IZ_KA_APP", bd: "IZ_KA-3_BD", con: "", conType: "" }
+
+    vms:
+      - { vmname: "ST-SRV-11", vmfolder: "IZ", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "SECFAB_IZ-Test|IZ_ST_APP|ST-1_EPG" }
+      - { vmname: "ST-SRV-12", vmfolder: "IZ", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "SECFAB_IZ-Test|IZ_ST_APP|ST-1_EPG" }
+      - { vmname: "ST-SRV-21", vmfolder: "IZ", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "SECFAB_IZ-Test|IZ_ST_APP|ST-2_EPG" }
+      - { vmname: "ST-SRV-22", vmfolder: "IZ", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "SECFAB_IZ-Test|IZ_ST_APP|ST-2_EPG" }
+      - { vmname: "ST-SRV-31", vmfolder: "IZ", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "SECFAB_IZ-Test|IZ_ST_APP|ST-3_EPG" }
+      - { vmname: "ST-SRV-32", vmfolder: "IZ", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "SECFAB_IZ-Test|IZ_ST_APP|ST-3_EPG" }
+      - { vmname: "KA-SRV-11", vmfolder: "IZ", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "SECFAB_IZ-Test|IZ_KA_APP|KA-1_EPG" }
+      - { vmname: "KA-SRV-12", vmfolder: "IZ", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "SECFAB_IZ-Test|IZ_KA_APP|KA-1_EPG" }
+      - { vmname: "KA-SRV-21", vmfolder: "IZ", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "SECFAB_IZ-Test|IZ_KA_APP|KA-2_EPG" }
+      - { vmname: "KA-SRV-22", vmfolder: "IZ", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "SECFAB_IZ-Test|IZ_KA_APP|KA-2_EPG" }
+      - { vmname: "KA-SRV-31", vmfolder: "IZ", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "SECFAB_IZ-Test|IZ_KA_APP|KA-3_EPG" }
+      - { vmname: "KA-SRV-32", vmfolder: "IZ", vmstate: "poweredon", template: "Alpine3-7_Template_v2", network: "SECFAB_IZ-Test|IZ_KA_APP|KA-3_EPG" }
+
+    #firewalls:
+    #  - { vmname: "SECFAB_FTD-01", vmfolder: "Sec-Lab/ACI_PBR_Demo1", vmstate: "poweredon", template: "FTDv-623_Template_v1"}
+    #  - { vmname: "SECFAB_FTD-02", vmfolder: "Sec-Lab/ACI_PBR_Demo2", vmstate: "poweredon", template: "FTDv-623_Template_v1"}
+    #  - { vmname: "SECFAB_FTD-03", vmfolder: "Sec-Lab/ACI_PBR_Demo3", vmstate: "poweredon", template: "FTDv-623_Template_v1"}
+
+
+  #DCTD-Demo|VDS-MicroSegmentation|VDS-MicroSeg_Server_EPG
+
+
+  tasks:
+
+    - name: Create Tenant
+      aci_tenant:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: "{{ tenant }}"
+        state: present
+
+    - pause:
+        seconds: 1
+
+    - name: Create VRFs
+      aci_vrf:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        vrf: "{{ item.name }}"
+        tenant: "{{ tenant }}"
+        policy_control_preference: enforced
+        state: present
+      with_items: "{{ vrfs }}"
+
+    - pause:
+        seconds: 1
+
+    - name: Add L3 BDs
+      aci_bd:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        state: present
+        tenant: "{{ tenant }}"
+        bd: "{{ item.name }}"
+        vrf: "{{ item.vrf }}"
+      when: item.gateway !=""
+      with_items: "{{ bds }}"
+
+    - name: Add L2 BDs
+      aci_bd:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        state: present
+        tenant: "{{ tenant }}"
+        arp_flooding: yes
+        l2_unknown_unicast: flood
+        l3_unknown_multicast: flood
+        bd: "{{ item.name }}"
+        vrf: "{{ item.vrf }}"
+      when: item.gateway ==""
+      with_items: "{{ bds }}"
+
+    - name: Add BD Subnet
+      aci_bd_subnet:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: "{{ tenant }}"
+        bd: "{{ item.name }}"
+        gateway: "{{ item.gateway }}"
+        mask: "{{ item.mask }}"
+        scope: public
+      when: item.gateway !=""
+      with_items: "{{ bds }}"
+
+    - name: Add APs
+      aci_ap:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: "{{ tenant }}"
+        ap: "{{ item.name }}"
+        state: present
+      with_items: "{{ anps }}"
+
+    - name: Add EPGs
+      aci_epg:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: "{{ tenant }}"
+        ap: "{{ item.anp }}"
+        epg: "{{ item.name }}"
+        bd: "{{ item.bd }}"
+        state: present
+      with_items: "{{ epgs }}"
+
+    - name: Add a new VMM domain to EPG binding
+      aci_epg_to_domain:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: "{{ tenant }}"
+        ap: "{{ item.anp }}"
+        epg: "{{ item.name }}"
+        domain: SECFAB-ACI
+        domain_type: vmm
+        vm_provider: vmware
+        state: present
+      with_items: "{{ epgs }}"
+
+
+
+    - name: Clone a VM from Template and customize
+      vmware_guest:
+        hostname: "{{ vcenter_ip }}"
+        username: "{{ vcenter_username }}"
+        password: "{{ vcenter_password }}"
+        validate_certs: no
+        datacenter: "{{ vcenter_dc }}"
+        state: "{{ item.vmstate }}"
+        #state: poweredoff
+        #state: absent
+        name: "{{ item.vmname }}"
+        #guest_id: other3xLinux64Guest
+        template: "{{ item.template }}"
+        folder: "/{{ item.vmfolder }}"
+        networks:
+          - name: "{{ item.network }}"
+            type: dhcp
+      with_items: "{{ vms }}"
+      delegate_to: localhost
+
+#    - name: Clone a Firewalls from Template and customize
+#      vmware_guest:
+#        hostname: "{{ vcenter_ip }}"
+#        username: "{{ vcenter_username }}"
+#        password: "{{ vcenter_password }}"
+#        validate_certs: no
+#        datacenter: "{{ vcenter_dc }}"
+#        state: "{{ item.vmstate }}"
+#        name: "{{ item.vmname }}"
+#        folder: "/{{ item.vmfolder }}"
+#        template: "{{ item.template }}"
+#      with_items: "{{ firewalls }}"
+#      delegate_to: localhost

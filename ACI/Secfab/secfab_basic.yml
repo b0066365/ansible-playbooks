@@ -1,0 +1,504 @@
+- name: playbook for testing bridge_domains
+  hosts: SecAPIC
+  connection: local
+  gather_facts: no
+
+
+  vars:
+    apic_username: "ansible"
+    apic_password: "password"
+    ntp_server: "10.1.17.1"
+    ntp_timezone: "Europe-Berlin"
+    bgp_as: "1"
+    bgp_rrs:
+      - { NodeID: "101", PodID: "1"}
+
+    vlan_pools:
+      - { name: "SECFAB_InBand_VLP", allocation: "static"}
+      - { name: "SECFAB_MultiPOD_VLP", allocation: "static"}
+      - { name: "SECFAB_PhyServer_VLP", allocation: "static"}
+      - { name: "SECFAB_VMM_VLP", allocation: "dynamic"}
+      - { name: "SECFAB_Mgmt_VLP", allocation: "static"}
+
+    vlan_blocks:
+      - { vlan_pool: "SECFAB_InBand_VLP", vlan_from: "92", vlan_to: "92", allocation: "static"  }
+      - { vlan_pool: "SECFAB_MultiPOD_VLP", vlan_from: "4", vlan_to: "4", allocation: "static"  }
+      - { vlan_pool: "SECFAB_PhyServer_VLP", vlan_from: "2", vlan_to: "999", allocation: "static"  }
+      - { vlan_pool: "SECFAB_VMM_VLP", vlan_from: "3001", vlan_to: "3900", allocation: "dynamic"  }
+      - { vlan_pool: "SECFAB_Mgmt_VLP", vlan_from: "17", vlan_to: "19", allocation: "static"  }
+
+    phys_doms:
+      - { name: "SECFAB_PhyServer_PD", vlan_pool: "SECFAB_PhyServer_VLP", vlan_pool_type: "static"}
+      - { name: "SECFAB_Mgmt_PD", vlan_pool: "SECFAB_Mgmt_VLP", vlan_pool_type: "static"}
+
+    ext_routed_doms:
+      - { name: "SECFAB_MultiPOD_L3DOM", vlan_pool: "SECFAB_MultiPOD_VLP", vlan_pool_type: "static"}
+      - { name: "SECFAB_External_RTR-01", vlan_pool: "SECFAB_PhyServer_VLP", vlan_pool_type: "static"}
+      - { name: "SECFAB_ASA5516-01_L3DOM", vlan_pool: "SECFAB_PhyServer_VLP", vlan_pool_type: "static"}
+
+    link_levels:
+      - { name: "SECFAB_100M", speed: "100M", auto_neg: "off"}
+      - { name: "SECFAB_1G", speed: "1G", auto_neg: "off"}
+      - { name: "SECFAB_10G", speed: "10G", auto_neg: "off"}
+      - { name: "SECFAB_40G", speed: "40G", auto_neg: "off"}
+      - { name: "SECFAB_Auto", speed: "inherit", auto_neg: "on"}
+
+    cdps:
+      - { name: "SECFAB_CDP-ENABLED", AdminState: "enabled"}
+      - { name: "SECFAB_CDP-DISABLED", AdminState: "disabled"}
+
+    lldps:
+      - { name: "SECFAB_LLDP-ENABLED", RxState: "enabled", TxState: "enabled"}
+      - { name: "SECFAB_LLDP-DISABLED", RxState: "disabled", TxState: "disabled"}
+
+    port_channels:
+      - { name: "SECFAB_LACP-ACTIVE", mode: "active"}
+      - { name: "SECFAB_PC-ON", mode: "off"}
+
+    aeps:
+      - { name: "SECFAB_General_AEP", state: "present" }
+      - { name: "SECFAB_InBand_AAEP", state: "present" }
+      - { name: "SECFAB_MultiPOD_AAEP", state: "present" }
+
+    ipgs_access:
+      - { name: "SECFAB_ESX-Host_LAP", llp: "SECFAB_10G", cdp: "SECFAB_CDP-ENABLED", lldp: "SECFAB_LLDP-ENABLED", aep: "SECFAB_General_AEP" }
+      - { name: "SECFAB_Mgmt-Switch_LAP", llp: "SECFAB_10G", cdp: "SECFAB_CDP-ENABLED", lldp: "SECFAB_LLDP-ENABLED", aep: "SECFAB_General_AEP" }
+      - { name: "SECFAB_ASA5585-02-Mgmt_LAP", llp: "SECFAB_1G", cdp: "SECFAB_CDP-ENABLED", lldp: "SECFAB_LLDP-ENABLED", aep: "SECFAB_General_AEP" }
+
+    ipgs_pc:
+      - { name: "SECFAB_PC_ASA5585-02_LAP", llp: "SECFAB_10G", cdp: "SECFAB_CDP-ENABLED", lldp: "SECFAB_LLDP-ENABLED", aep: "SECFAB_General_AEP", portchannel: "SECFAB_LACP-ACTIVE" }
+
+    ipgs_vpc:
+      - { name: "SECFAB_VPC_ESX-Host_LAP", llp: "SECFAB_10G", cdp: "SECFAB_CDP-ENABLED", lldp: "SECFAB_LLDP-ENABLED", aep: "SECFAB_General_AEP", portchannel: "SECFAB_LACP-ACTIVE" }
+      - { name: "SECFAB_VPC_ASA5516-01_LAP", llp: "SECFAB_1G", cdp: "SECFAB_CDP-ENABLED", lldp: "SECFAB_LLDP-ENABLED", aep: "SECFAB_General_AEP", portchannel: "SECFAB_LACP-ACTIVE" }
+      - { name: "SECFAB_VPC_MGMT_LAP", llp: "SECFAB_10G", cdp: "SECFAB_CDP-ENABLED", lldp: "SECFAB_LLDP-ENABLED", aep: "SECFAB_General_AEP", portchannel: "SECFAB_LACP-ACTIVE" }
+      - { name: "SECFAB_VPC_ASA5585-01_LAP", llp: "SECFAB_10G", cdp: "SECFAB_CDP-ENABLED", lldp: "SECFAB_LLDP-ENABLED", aep: "SECFAB_General_AEP", portchannel: "SECFAB_LACP-ACTIVE" }
+
+
+    isels:
+      - { name: "Test-1", node: "1001-1002", module: "1", port: "15", ipg: "SECFAB_VPC_ESX-Host_LAP" }
+      - { name: "ASA5516-01_po1", node: "1001-1002", module: "1", port: "45", ipg: "SECFAB_VPC_ASA5516-01_LAP" }
+
+    tenants:
+      - { name: "SECFAB_Mgmt", state: "present" }
+      - { name: "SECFAB_Services-Demo", state: "present" }
+      - { name: "SECFAB_Services-Demo_External", state: "present" }
+      - { name: "SECFAB_GSSO_DWOELLHA", state: "present" }
+      - { name: "SECFAB_GSSO_OLBRAUN", state: "present" }
+      - { name: "SECFAB_GSSO_SDUERNBE", state: "present" }
+      - { name: "SECFAB_GSSO_TJANKOWS", state: "present" }
+      - { name: "SECFAB_GSSO_RMUELLER", state: "present" }
+      - { name: "SECFAB_GSSO_CSCHULME", state: "present" }
+      - { name: "SECFAB_GSSO_MTANASKO", state: "present" }
+      - { name: "SECFAB_GSSO_MVASSIGH", state: "present" }
+
+
+
+  tasks:
+#    - name: Create a Snapshot
+#      aci_config_snapshot:
+#        hostname: "{{ inventory_hostname }}"
+#        username: admin
+#        password: "{{ apic_password }}"
+#        state: present
+#        export_policy: Ansible_Backup
+#        max_count: 10
+#        description: Backups taken before Ansible runs.
+#        validate_certs: no
+
+#    - name: Add a users
+#      aci_aaa_user:
+#        hostname: "{{ inventory_hostname }}"
+#        username: "{{ apic_username }}"
+#        password: "{{ apic_password }}"
+#        validate_certs: no
+#        aaa_user: ansible2
+#        aaa_password: C15co123!
+#        expiration: never
+#        expires: no
+#        state: present
+
+    - name: Set Timeserver via REST
+      aci_rest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        path: /api/mo/uni.xml
+        method: post
+        content: |
+            <datetimeNtpProv descr="" dn="uni/fabric/time-default/ntpprov-{{ ntp_server }}" keyId="0" maxPoll="6" minPoll="4" name="{{ ntp_server }}" nameAlias="" preferred="yes">
+            <datetimeRsNtpProvToEpg tDn="uni/tn-mgmt/mgmtp-default/oob-default"/>
+            </datetimeNtpProv>
+      delegate_to: localhost
+
+    - pause:
+        seconds: 2
+
+    - name: Set Timezone via REST
+      aci_rest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        path: /api/mo/uni.xml
+        method: post
+        content: |
+            <datetimeFormat descr="" displayFormat="local" dn="uni/fabric/format-default" name="default" nameAlias="" ownerKey="" ownerTag="" showOffset="disabled" tz="p120_{{ ntp_timezone }}"/>
+      delegate_to: localhost
+
+    - pause:
+        seconds: 2
+
+    - name: Set BGP AS via REST
+      aci_rest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        path: /api/mo/uni.xml
+        method: post
+        content: |
+          <bgpInstPol descr="" dn="uni/fabric/bgpInstP-default" name="default" nameAlias="" ownerKey="" ownerTag="">
+            <bgpAsP asn="{{ bgp_as }}" descr="" name="" nameAlias=""/>
+          </bgpInstPol>
+      delegate_to: localhost
+
+    - pause:
+        seconds: 2
+
+    - name: Add BGP RRs via REST
+      aci_rest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        path: /api/mo/uni.xml
+        method: post
+        content: |
+          <bgpInstPol descr="" dn="uni/fabric/bgpInstP-default" name="default" nameAlias="" ownerKey="" ownerTag="">
+            <bgpRRP descr="" name="" nameAlias="">
+                <bgpRRNodePEp descr="" id="{{ item.NodeID }}" nameAlias="" podId="{{ item.PodID }}"/>
+             </bgpRRP>
+          </bgpInstPol>
+      with_items: "{{ bgp_rrs }}"
+      delegate_to: localhost
+
+    - pause:
+        seconds: 2
+
+    - name: Create POD Policy Group via REST
+      aci_rest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        path: /api/mo/uni.xml
+        method: post
+        content: |
+          <fabricPodPGrp descr="" dn="uni/fabric/funcprof/podpgrp-SECFAB_POD-Policy" name="SECFAB_POD-Policy" nameAlias="" ownerKey="" ownerTag="">
+                <fabricRsCommPol tnCommPolName=""/>
+                <fabricRsPodPGrpBGPRRP tnBgpInstPolName="default"/>
+                <fabricRsPodPGrpCoopP tnCoopPolName=""/>
+                <fabricRsPodPGrpIsisDomP tnIsisDomPolName=""/>
+                <fabricRsSnmpPol tnSnmpPolName="default"/>
+                <fabricRsTimePol tnDatetimePolName="default"/>
+          </fabricPodPGrp>
+      delegate_to: localhost
+
+    - pause:
+        seconds: 2
+
+    - name: Add POD Policy Group to POD Profile via REST
+      aci_rest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        path: /api/mo/uni.xml
+        method: post
+        content: |
+          <fabricPodS descr="" dn="uni/fabric/podprof-default/pods-default-typ-ALL" name="default" nameAlias="" ownerKey="" ownerTag="" type="ALL">
+            <fabricRsPodPGrp tDn="uni/fabric/funcprof/podpgrp-SECFAB_POD-Policy"/>
+          </fabricPodS>
+      delegate_to: localhost
+
+    - pause:
+        seconds: 2
+
+    - name: Enable Port Tracking via REST
+      aci_rest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        path: /api/mo/uni.xml
+        method: post
+        content: |
+          <infraPortTrackPol adminSt="on" delay="120" descr="" dn="uni/infra/trackEqptFabP-default" minlinks="0" name="default" nameAlias="" ownerKey="" ownerTag=""/>
+      delegate_to: localhost
+
+    - pause:
+        seconds: 2
+
+    - name: Add Link Level Policies via REST
+      aci_rest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        path: /api/mo/uni.xml
+        method: post
+        content: |
+          <fabricHIfPol autoNeg="{{ item.auto_neg }}" descr="" dn="uni/infra/hintfpol-{{ item.name }}" fecMode="inherit" linkDebounce="100" name="{{ item.name }}" nameAlias="" ownerKey="" ownerTag="" speed="{{ item.speed }}"/>
+      with_items: "{{ link_levels }}"
+      delegate_to: localhost
+
+    - name: Add CDP Policies via REST
+      aci_rest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        path: /api/mo/uni.xml
+        method: post
+        content: |
+          <cdpIfPol adminSt="{{ item.AdminState }}" descr="" dn="uni/infra/cdpIfP-{{ item.name }}" name="{{ item.name }}" nameAlias="" ownerKey="" ownerTag=""/>
+      with_items: "{{ cdps }}"
+      delegate_to: localhost
+
+    - pause:
+        seconds: 2
+
+#    - name: Add LLDP Policies via REST
+#      aci_rest:
+#        hostname: "{{ inventory_hostname }}"
+#        username: "{{ apic_username }}"
+#        password: "{{ apic_password }}"
+#        validate_certs: no
+#        path: /api/mo/uni.xml
+#        method: post
+#        content: |
+#          <lldpIfPol adminRxSt="{{ item.RxState }}" adminTxSt="{{ item.TxState }}" descr="" dn="uni/infra/lldpIfP-{{ item.name }}" name="{{ item.name }}" nameAlias="" ownerKey="" ownerTag=""/>
+#      with_items: "{{ lldps }}"
+#      delegate_to: localhost
+
+    - name: Add LLDP Policies
+      aci_interface_policy_lldp:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        lldp_policy: '{{ item.name }}'
+        receive_state: '{{ item.RxState }}'
+        transmit_state: '{{ item.TxState }}'
+      with_items: "{{ lldps }}"
+
+    - name: Add Port-Channel Policies via REST
+      aci_rest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        path: /api/mo/uni.xml
+        method: post
+        content: |
+          <lacpLagPol ctrl="fast-sel-hot-stdby,graceful-conv,susp-individual" descr="" dn="uni/infra/lacplagp-{{ item.name }}" maxLinks="16" minLinks="1" mode="{{ item.mode }}" name="{{ item.name }}" nameAlias="" ownerKey="" ownerTag=""/>
+      with_items: "{{ port_channels }}"
+      delegate_to: localhost
+
+    - pause:
+        seconds: 2
+
+    - name: Add VLAN Pools
+      aci_vlan_pool:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        pool: "{{ item.name }}"
+        pool_allocation_mode: "{{ item.allocation }}"
+        state: present
+      with_items: "{{ vlan_pools }}"
+
+#      aci_rest:
+#        hostname: "{{ inventory_hostname }}"
+#        username: "{{ apic_username }}"
+#        password: "{{ apic_password }}"
+#        validate_certs: no
+#        path: /api/mo/uni.xml
+#        method: post
+#        content: |
+#          <fvnsVlanInstP allocMode="{{ item.allocation }}" descr="" dn="uni/infra/vlanns-[{{ item.name }}]-{{ item.allocation }}" name="{{ item.name }}" nameAlias="" ownerKey="" ownerTag="">
+#          </fvnsVlanInstP>
+#      with_items: "{{ vlan_pools }}"
+#      delegate_to: localhost
+
+    - pause:
+        seconds: 2
+
+    - name: Add VLAN Blocks to Pools
+      aci_vlan_pool_encap_block:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        pool: "{{ item.vlan_pool }}"
+        block_name: "{{ item.vlan_pool }}"
+        block_start: "{{ item.vlan_from }}"
+        block_end: "{{ item.vlan_to }}"
+        pool_allocation_mode: "{{ item.allocation }}"
+        state: present
+      with_items: "{{ vlan_blocks }}"
+
+#      aci_rest:
+#        hostname: "{{ inventory_hostname }}"
+#        username: "{{ apic_username }}"
+#        password: "{{ apic_password }}"
+#        validate_certs: no
+#        path: /api/mo/uni.xml
+#        method: post
+#        content: |
+#          <fvnsVlanInstP allocMode="{{ item.allocation }}" descr="" dn="uni/infra/vlanns-[{{ item.vlan_pool }}]-{{ item.allocation }}" name="{{ item.vlan_pool }}" nameAlias="" ownerKey="" ownerTag="">
+#            <fvnsEncapBlk allocMode="inherit" descr="" from="{{ item.vlan_from }}" name="" nameAlias="" to="{{ item.vlan_to }}"/>
+#           </fvnsVlanInstP>
+#      with_items: "{{ vlan_blocks }}"
+#      delegate_to: localhost
+
+    - pause:
+        seconds: 2
+
+    - name: Add Phys Doms via REST
+      aci_rest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        path: /api/mo/uni.xml
+        method: post
+        content: |
+          <physDomP dn="uni/phys-{{ item.name }}" name="{{ item.name }}" nameAlias="" ownerKey="" ownerTag="">
+            <infraRsVlanNs tDn="uni/infra/vlanns-[{{ item.vlan_pool }}]-{{ item.vlan_pool_type }}"/>
+          </physDomP>
+      with_items: "{{ phys_doms }}"
+      delegate_to: localhost
+
+    - pause:
+        seconds: 2
+
+    - name: Add External Routed Doms via REST
+      aci_rest:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        path: /api/mo/uni.xml
+        method: post
+        content: |
+          <l3extDomP dn="uni/l3dom-{{ item.name }}" name="{{ item.name }}" nameAlias="" ownerKey="" ownerTag="">
+            <infraRsVlanNs tDn="uni/infra/vlanns-[{{ item.vlan_pool }}]-{{ item.vlan_pool_type }}"/>
+          </l3extDomP>
+      with_items: "{{ ext_routed_doms }}"
+      delegate_to: localhost
+
+    - pause:
+        seconds: 2
+
+    - name: Ensure AAEP exist
+      aci_aep:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        aep: "{{ item.name }}"
+        state: "{{ item.state }}"
+      with_items: "{{ aeps }}"
+
+    - name: Ensure Tenants exist
+      aci_tenant:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        tenant: "{{ item.name }}"
+        state: "{{ item.state }}"
+      with_items: "{{ tenants }}"
+
+    - name: Add a new leaf_interface_profile
+      aci_interface_policy_leaf_profile:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        leaf_interface_profile: "SEC-LEAF-{{ item }}_IPRO"
+        state: present
+      with_items:
+        - 1001
+        - 1002
+        - 2001
+        - 2002
+        - 1001-1002
+        - 2001-2002
+
+    - name: Creating a Leaf Profile
+      aci_switch_policy_leaf_profile:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        leaf_profile: "SEC-LEAF-{{ item }}_SPRO"
+        state: present
+      with_items:
+        - 1001
+        - 1002
+        - 2001
+        - 2002
+        - 1001-1002
+        - 2001-2002
+
+    - name: Create a Access Interface Policy Group
+      aci_interface_policy_leaf_policy_group:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        lag_type: leaf
+        policy_group: "{{ item.name }}"
+        link_level_policy: "{{ item.llp }}"
+        cdp_policy: "{{ item.cdp }}"
+        lldp_policy: "{{ item.lldp }}"
+        aep: "{{ item.aep }}"
+        state: present
+      with_items: "{{ ipgs_access }}"
+
+    - name: Create a Virtual Port Channel (VPC) Interface Policy Group (no description)
+      aci_interface_policy_leaf_policy_group:
+        hostname: "{{ inventory_hostname }}"
+        username: "{{ apic_username }}"
+        password: "{{ apic_password }}"
+        validate_certs: no
+        lag_type: node
+        policy_group: "{{ item.name }}"
+        link_level_policy: "{{ item.llp }}"
+        cdp_policy: "{{ item.cdp }}"
+        lldp_policy: "{{ item.lldp }}"
+        port_channel_policy: "{{ item.portchannel }}"
+        aep: "{{ item.aep }}"
+        state: present
+      with_items: "{{ ipgs_vpc }}"
+
+    - name: Create Interface Selctor on Leaf Interface Profile
+      aci_rest:
+       hostname: "{{ inventory_hostname }}"
+       username: "{{ apic_username }}"
+       password: "{{ apic_password }}"
+       validate_certs: no
+       path: /api/mo/uni.xml
+       method: post
+       content: |
+         <infraHPortS annotation="" descr="" dn="uni/infra/accportprof-SEC-LEAF-{{ item.node }}_IPRO/hports-{{ item.name }}-typ-range" name="{{ item.name }}" nameAlias="" ownerKey="" ownerTag="" type="range">
+            <infraRsAccBaseGrp annotation="" fexId="101" tDn="uni/infra/funcprof/accbundle-{{ item.ipg }}"/>
+            <infraPortBlk annotation="" descr="" fromCard="{{ item.module }}" fromPort="{{ item.port }}" name="block2" nameAlias="" toCard="{{ item.module }}" toPort="{{ item.port }}"/>
+         </infraHPortS>
+      delegate_to: localhost
+      with_items: "{{ isels }}"
